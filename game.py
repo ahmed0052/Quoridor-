@@ -65,3 +65,100 @@ class GameLogic:
 
         self.state.current_player = 1-self.state.current_player
         return True
+
+class BFS:
+    def __init__(self, state):
+        self.state = state
+    def has_path(self,player):
+        start = self.state.pawns[player]
+        goal_row = 8 if player == 0 else 0
+        visited = []
+        queue = [start]
+        while queue:
+            current = queue.pop(0)
+            x,y = current
+            if x == goal_row:
+                return True
+            if current in visited:
+                continue
+            visited.append(current)
+
+            for neighbor in self.get_neighbors(x,y):
+                if neighbor not in visited:
+                    queue.append(neighbor)
+
+        return False
+
+    def get_neighbors(self,x,y):
+        neighbors = []
+        if x > 0 and not self.state.h_walls[x-1][y]:
+            neighbors.append([x-1, y])
+
+        if x < 8 and not self.state.h_walls[x][y]:
+            neighbors.append([x+1, y])
+
+        if y > 0 and not self.state.h_walls[x][y-1]:
+            neighbors.append([x, y-1])
+
+        if y < 8 and not self.state.h_walls[x][y]:
+            neighbors.append([x, y+1])
+
+        return neighbors
+
+class WallsPlacer:
+    def __init__(self, state):
+        self.state = state
+        self.bfs = BFS(state)
+
+    def place_wall(self, x, y, direction):
+        if direction == "H":
+            if not (0 <= x <= 8 and 0 <= y < 8):
+                print("Invalid direction")
+                return False
+
+        elif direction == "V":
+            if not (0 <= x < 8 and 0 <= y <= 8):
+                print("Invalid direction")
+                return False
+
+        if self.is_overlap(x,y,direction):
+            print("Wall overlaps another wall")
+            return False
+
+        self.apply_wall(x, y, direction)
+        if not self.bfs.has_path(0) or not self.bfs.has_path(1):
+            self.remove_wall(x, y, direction)
+            print("Illegal move")
+            return False
+        self.state.walls_available[self.state.current_player] -= 1
+        self.state.current_player = 1 - self.state.current_player
+        return True
+
+    def apply_wall(self, r, c, direction):
+        if direction == "h":
+            self.state.h_walls[r][c] = True
+            self.state.h_walls[r][c + 1] = True
+        elif direction == "v":
+            self.state.v_walls[r][c] = True
+            self.state.v_walls[r + 1][c] = True
+
+    def remove_wall(self, r, c, direction):
+        if direction == "h":
+            self.state.h_walls[r][c] = False
+            self.state.h_walls[r][c + 1] = False
+        elif direction == "v":
+            self.state.v_walls[r][c] = False
+            self.state.v_walls[r + 1][c] = False
+
+    def is_overlap(self, r, c, direction):
+        if direction == "h":
+            return self.state.h_walls[r][c] or self.state.h_walls[r][c + 1]
+        elif direction == "v":
+            return self.state.v_walls[r][c] or self.state.v_walls[r + 1][c]
+
+
+
+
+
+
+
