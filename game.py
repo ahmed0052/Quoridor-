@@ -29,12 +29,11 @@ class PawnMovement:
         self.state = state
     def is_in_bounds(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
-    def is_blocked(self, x, y, player):
-        opponent = 1 - player
-        return self.state.pawns[opponent] == [x,y]
     def get_valid_moves(self, player):
         x, y = self.state.pawns[player]
         directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+        opponent = 1 - player
+        ox, oy = self.state.pawns[opponent]
         valid_moves = []
         for dx, dy in directions:
             new_x, new_y = x + dx, y + dy
@@ -42,11 +41,52 @@ class PawnMovement:
             if not self.is_in_bounds(new_x, new_y):
                 continue
 
-            if self.is_blocked(new_x, new_y, player):
-                continue
+            if [new_x, new_y] == [ox, oy]:
+                jump_x = new_x + dx
+                jump_y = new_y + dy
 
-            valid_moves.append([new_x, new_y])
+                if self.is_in_bounds(jump_x, jump_y) and not self.is_wall_between(new_x, new_y, dx, dy):
+                    valid_moves.append([jump_x, jump_y])
+
+                else:
+                    diagonal = self.get_diagonals(new_x, new_y, dx, dy)
+                    valid_moves.extend(diagonal)
+
+            else:
+                valid_moves.append([new_x, new_y])
+
         return valid_moves
+
+    def is_wall_between(self, x, y, dx, dy):
+        if dx == -1:
+            return x > 0 and self.state.h_walls[x-1][y]
+
+        if dx == 1:
+            return x < 8 and self.state.h_walls[x][y]
+
+        if dy == -1:
+            return y > 0 and self.state.v_walls[x][y-1]
+
+        if dy == 1:
+            return y < 8 and self.state.v_walls[x][y]
+
+        return False
+
+    def get_diagonals(self, x, y, dx, dy):
+        diagonals = []
+        if dx != 0: #vertical
+            perp = [[0, -1], [0, 1]]
+
+        else:       #horizontal
+            perp = [[-1, 0], [1, 0]]
+
+        for pdx, pdy in perp:
+            diag_x = x + pdx
+            diag_y = y + pdy
+            if self.is_in_bounds(diag_x, diag_y) and not self.is_wall_between(x, y, pdx, pdy):
+                diagonals.append([diag_x, diag_y])
+
+        return diagonals
 
 class GameLogic:
     def __init__(self, state):
@@ -64,7 +104,19 @@ class GameLogic:
         self.state.pawns[player] = [new_x, new_y]
 
         self.state.current_player = 1-self.state.current_player
+        winner = self.check_winner()
+        if winner is not None:
+            print(f"Player {winner+1} wins")
         return True
+
+    def check_winner(self):
+        if self.state.pawns[0][0] == 8:
+            return 0
+
+        if self.state.pawns[1][0] == 0:
+            return 1
+
+        return None
 
 class BFS:
     def __init__(self, state):
@@ -97,10 +149,10 @@ class BFS:
         if x < 8 and not self.state.h_walls[x][y]:
             neighbors.append([x+1, y])
 
-        if y > 0 and not self.state.h_walls[x][y-1]:
+        if y > 0 and not self.state.v_walls[x][y-1]:
             neighbors.append([x, y-1])
 
-        if y < 8 and not self.state.h_walls[x][y]:
+        if y < 8 and not self.state.v_walls[x][y]:
             neighbors.append([x, y+1])
 
         return neighbors
@@ -111,12 +163,12 @@ class WallsPlacer:
         self.bfs = BFS(state)
 
     def place_wall(self, x, y, direction):
-        if direction == "H":
+        if direction == "h":
             if not (0 <= x <= 8 and 0 <= y < 8):
                 print("Invalid direction")
                 return False
 
-        elif direction == "V":
+        elif direction == "v":
             if not (0 <= x < 8 and 0 <= y <= 8):
                 print("Invalid direction")
                 return False
