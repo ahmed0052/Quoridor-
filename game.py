@@ -40,8 +40,11 @@ class PawnMovement:
 
             if not self.is_in_bounds(new_x, new_y):
                 continue
-
+            if self.is_wall_between(x, y, dx, dy):
+                continue
             if [new_x, new_y] == [ox, oy]:
+                if self.is_wall_between(x, y, dx, dy):
+                    continue
                 jump_x = new_x + dx
                 jump_y = new_y + dy
 
