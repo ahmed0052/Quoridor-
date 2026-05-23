@@ -1,16 +1,28 @@
 from game import PawnMovement, WallsPlacer, BFS
 import copy
+import sys
+sys.setrecursionlimit(1000000)
 
 class AI:
-    def __init__(self,state,AiPlayer=1, depth =2):
+    def __init__(self,state,AiPlayer=1, difficulty='medium'):
         self.state = state
         self.AiPlayer = AiPlayer
-        self.depth = depth
+        if difficulty == 'easy':
+            self.depth = 1
+            self.wall_range = 0
+
+        elif difficulty == 'medium':
+            self.depth = 2
+            self.wall_range = 2
+
+        elif difficulty == 'hard':
+            self.depth = 3
+            self.wall_range = 3
 
     def get_best_move(self):
         best_move = None
         best_score = float ('-inf')
-        for action in self.get_all_actions(self.AiPlayer, self.state):
+        for action in self.get_all_action(self.AiPlayer, self.state):
             newState = copy.deepcopy(self.state)
             self.apply_Action(newState,self.AiPlayer,action)
             score = self.minimax(newState,self.depth-1, False, float('-inf'),float('inf'))
@@ -21,10 +33,10 @@ class AI:
         return best_move
 
     def check_winner(self,state):
-        if self.state.pawns[0][0] == 8:
+        if state.pawns[0][0] == 8:
             return 0
 
-        if self.state.pawns[1][0] == 0:
+        if state.pawns[1][0] == 0:
             return 1
 
         return None
@@ -42,9 +54,9 @@ class AI:
         if isMax:
             max_score = float('-inf')
             for action in self.get_all_action(player, state):
-                newState = copy.deepcopy(self.state)
+                newState = copy.deepcopy(state)
                 self.apply_Action(newState,player,action)
-                score = self.minimax(newState,self.depth-1,False,alpha,beta)
+                score = self.minimax(newState,depth-1,False,alpha,beta)
                 max_score = max(max_score,score)
                 alpha = max(alpha,score)
                 if beta <= alpha:
@@ -54,9 +66,9 @@ class AI:
         else:
             min_score = float('inf')
             for action in self.get_all_action(player, state):
-                newState = copy.deepcopy(self.state)
+                newState = copy.deepcopy(state)
                 self.apply_Action(newState,player,action)
-                score = self.minimax(newState,self.depth-1,True,alpha,beta)
+                score = self.minimax(newState,depth-1,True,alpha,beta)
                 min_score = min(min_score,score)
                 beta = min(beta,score)
                 if beta <= alpha:
@@ -89,8 +101,43 @@ class AI:
                     queue.append([neighbor,distance+1])
 
         return float('inf')
+    def get_all_action(self,player,state):
+        actions = []
+        movement = PawnMovement(state)
+
+        for move in movement.get_valid_moves(player):
+            actions.append(('move', move))
 
 
+        if state.walls_available[player] > 0:
+
+            p0 = state.pawns[0]
+            p1 = state.pawns[1]
+
+            for x in range(9):
+                for y in range(9):
+                    near_p0 = abs(x - p0[0]) <= self.wall_range and abs(y - p0[1]) <= self.wall_range
+                    near_p1 = abs(x - p1[0]) <= self.wall_range and abs(y - p1[1]) <= self.wall_range
+
+                    if near_p0 or near_p1:
+                        if y < 8:
+                            actions.append(('wall', x, y, 'h'))
+                        if x < 8:
+                            actions.append(('wall', x, y, 'v'))
+
+        return actions
+    def apply_Action(self,state,player,action):
+        state.current_player = player
+
+        if action[0] == 'move':
+            move = action[1]
+            state.pawns[player] = move
+            state.current_player = 1 - player
+
+        elif action[0] == 'wall':
+            _, x, y, direction = action
+            wall_placer = WallsPlacer(state)
+            wall_placer.place_wall(x, y, direction)
 
 
 
