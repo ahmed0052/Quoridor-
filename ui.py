@@ -12,6 +12,7 @@ LIGHT_GRAY = (230, 230, 230)
 YELLOW     = (255, 215, 0  )
 
 
+# Computes responsive layout values based on screen size
 def compute_layout(screen_w, screen_h):
     panel_width  = int(screen_w * 0.22)
     board_area_w = screen_w - panel_width
@@ -36,6 +37,7 @@ def compute_layout(screen_w, screen_h):
     }
 
 
+# Responsible for drawing the board, pawns, and walls
 class Board:
     def __init__(self, screen, state, layout):
         self.screen = screen
@@ -88,6 +90,7 @@ class Board:
                     x, y = self.cell_to_pixel(row, col)
                     pygame.draw.rect(self.screen, BROWN, (x + cs, y, gs, cs))
 
+    # Shows a temporary wall preview before placement
     def draw_wall_preview(self, row, col, direction):
         cs = self.layout['cell_size']
         gs = self.layout['gap_size']
@@ -107,6 +110,7 @@ class Board:
             pygame.draw.rect(self.screen, YELLOW, (x2 + cs, y2, gs, cs))
 
 
+# Side panel UI displaying game info and controls
 class UI:
     def __init__(self, screen, state, layout):
         self.screen = screen

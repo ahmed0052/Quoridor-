@@ -8,6 +8,7 @@ pygame.init()
 screen = pygame.display.set_mode((1200, 750), pygame.RESIZABLE)
 pygame.display.set_caption("Quoridor")
 
+# Displays the difficulty selection menu
 def run_difficulty_screen():
     while True:
         layout = compute_layout(*screen.get_size())
@@ -22,6 +23,7 @@ def run_difficulty_screen():
                     return difficulty_screen.selected
         difficulty_screen.draw()
 
+# Creates and runs the main game loop
 def run_game(selected):
     state = GameState()
     logic = GameLogic(state)
@@ -38,47 +40,66 @@ def run_game(selected):
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():
+
+            # Exit game
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
+            # Update layout when resizing the window
             elif event.type == pygame.VIDEORESIZE:
                 layout = compute_layout(*screen.get_size())
                 game.layout = layout
                 game.board.layout = layout
+
+            # Handle mouse input
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 game.handle_click(*pygame.mouse.get_pos())
+
+            # Handle keyboard input
             elif event.type == pygame.KEYDOWN:
                 game.handle_key(event.key)
 
         game.update()
         game.draw()
-        clock.tick(60)
+        clock.tick(60) # Limit frame rate
 
+        # Return winner after game ends
         if game.game_over and game.winner is not None:
             game.draw()
             pygame.time.wait(1000)
             return game.winner
 
+        # Return to menu if game was reset
         if game.game_over and game.winner is None:
             return None
 
+# Displays the winner screen after the game ends
 def run_win_screen(winner):
     while True:
         layout = compute_layout(*screen.get_size())
         win_screen = WinScreen(screen, winner, layout)
+
         for event in pygame.event.get():
+
+            # Exit game
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 result = win_screen.handle_click(*pygame.mouse.get_pos())
+
                 if result == 'again':
                     return 'again'
+
                 elif result == 'quit':
                     pygame.quit()
                     exit()
+
         win_screen.draw()
 
+# Main application loop
 while True:
     selected = run_difficulty_screen()
     winner = run_game(selected)

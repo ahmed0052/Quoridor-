@@ -1,6 +1,8 @@
 from game import GameState, GameLogic, WallsPlacer
 from AI import AI
 
+
+# We made this file just to test functions while implementation
 state = GameState()
 logic = GameLogic(state)
 AI = AI(state, AiPlayer=1, difficulty='hard')
