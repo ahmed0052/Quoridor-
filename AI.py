@@ -3,7 +3,9 @@ import copy
 import sys
 sys.setrecursionlimit(1000000)
 
+# AI player using Minimax with Alpha-Beta pruning
 class AI:
+    # Difficulty affects search depth and wall search range
     def __init__(self,state,AiPlayer=1, difficulty='medium'):
         self.state = state
         self.AiPlayer = AiPlayer
@@ -11,21 +13,25 @@ class AI:
             self.depth = 1
             self.wall_range = 0
 
+        #fixed play time for both medium and hard
         elif difficulty == 'medium':
             self.depth = 2
-            self.wall_range = 2
+            self.wall_range = 1
 
         elif difficulty == 'hard':
             self.depth = 3
-            self.wall_range = 3
+            self.wall_range = 1
 
+    # Try all possible actions and choose the highest scoring one
     def get_best_move(self):
         best_move = None
         best_score = float ('-inf')
+
         for action in self.get_all_action(self.AiPlayer, self.state):
             newState = copy.deepcopy(self.state)
             self.apply_Action(newState,self.AiPlayer,action)
             score = self.minimax(newState,self.depth-1, False, float('-inf'),float('inf'))
+
             if score > best_score:
                 best_score = score
                 best_move = action
@@ -41,6 +47,7 @@ class AI:
 
         return None
 
+    # Recursive Minimax algorithm with Alpha-Beta pruning
     def minimax(self,state,depth,isMax,alpha,beta):
         winner = self.check_winner(state)
         if winner == self.AiPlayer:
@@ -51,6 +58,8 @@ class AI:
             return self.evaluate(state)
 
         player = self.AiPlayer if isMax else 1 - self.AiPlayer
+
+        # AI tries to maximize score
         if isMax:
             max_score = float('-inf')
             for action in self.get_all_action(player, state):
@@ -59,10 +68,13 @@ class AI:
                 score = self.minimax(newState,depth-1,False,alpha,beta)
                 max_score = max(max_score,score)
                 alpha = max(alpha,score)
+
                 if beta <= alpha:
                     break
 
             return max_score
+
+        # Opponent tries to minimize score
         else:
             min_score = float('inf')
             for action in self.get_all_action(player, state):
@@ -75,12 +87,14 @@ class AI:
                     break
             return min_score
 
+    # Heuristic based on shortest distance to goal
     def evaluate(self,state):
         Ai_distance = self.BFS_distance(state,self.AiPlayer)
         oppo_distance = self.BFS_distance(state,1 - self.AiPlayer)
 
         return oppo_distance - Ai_distance
 
+    # Finds shortest path length using BFS
     def BFS_distance(self,state,player):
         start = state.pawns[player]
         goalRow = 8 if player == 0 else 0
@@ -101,10 +115,12 @@ class AI:
                     queue.append([neighbor,distance+1])
 
         return float('inf')
+
     def get_all_action(self,player,state):
         actions = []
         movement = PawnMovement(state)
 
+        # Generate possible pawn moves
         for move in movement.get_valid_moves(player):
             actions.append(('move', move))
 
@@ -119,6 +135,7 @@ class AI:
                     near_p0 = abs(x - p0[0]) <= self.wall_range and abs(y - p0[1]) <= self.wall_range
                     near_p1 = abs(x - p1[0]) <= self.wall_range and abs(y - p1[1]) <= self.wall_range
 
+                    # Generate possible wall placements near players
                     if near_p0 or near_p1:
                         if y < 8:
                             actions.append(('wall', x, y, 'h'))
@@ -126,6 +143,8 @@ class AI:
                             actions.append(('wall', x, y, 'v'))
 
         return actions
+
+    # Applies a simulated move/wall during Minimax search
     def apply_Action(self,state,player,action):
         state.current_player = player
 

@@ -1,4 +1,5 @@
 class GameState:
+    # stores the complete game state pawns, walls, and info
     def __init__(self):
         self.pawns = [
             [0,4],
@@ -25,23 +26,31 @@ class GameState:
 
 
 class PawnMovement:
+    # Handles pawn movement rules and valid move generation
     def __init__(self,state):
         self.state = state
+
     def is_in_bounds(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
+
+    # Returns all legal moves including jumps and diagonal moves
     def get_valid_moves(self, player):
         x, y = self.state.pawns[player]
         directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]
         opponent = 1 - player
         ox, oy = self.state.pawns[opponent]
         valid_moves = []
+
         for dx, dy in directions:
             new_x, new_y = x + dx, y + dy
 
             if not self.is_in_bounds(new_x, new_y):
                 continue
+
             if self.is_wall_between(x, y, dx, dy):
                 continue
+
+            # Handle jumping over the opponent pawn
             if [new_x, new_y] == [ox, oy]:
                 if self.is_wall_between(x, y, dx, dy):
                     continue
@@ -52,6 +61,7 @@ class PawnMovement:
                     valid_moves.append([jump_x, jump_y])
 
                 else:
+                    # Used when direct jump is blocked by a wall
                     diagonal = self.get_diagonals(new_x, new_y, dx, dy)
                     valid_moves.extend(diagonal)
 
@@ -60,6 +70,7 @@ class PawnMovement:
 
         return valid_moves
 
+    # Checks if a wall blocks movement in the given direction
     def is_wall_between(self, x, y, dx, dy):
         if dx == -1:
             return x > 0 and self.state.h_walls[x-1][y]
@@ -92,6 +103,7 @@ class PawnMovement:
         return diagonals
 
 class GameLogic:
+    # Controls pawn movement and win conditions
     def __init__(self, state):
         self.state = state
         self.motion = PawnMovement(state)
@@ -122,8 +134,11 @@ class GameLogic:
         return None
 
 class BFS:
+    # Breadth First Search used to verify path availability
     def __init__(self, state):
         self.state = state
+
+    # Ensures the player can still reach the goal row
     def has_path(self,player):
         start = self.state.pawns[player]
         goal_row = 8 if player == 0 else 0
@@ -161,6 +176,7 @@ class BFS:
         return neighbors
 
 class WallsPlacer:
+    # Handles wall placement and legality checks
     def __init__(self, state):
         self.state = state
         self.bfs = BFS(state)
@@ -181,6 +197,8 @@ class WallsPlacer:
             return False
 
         self.apply_wall(x, y, direction)
+
+        # Prevent illegal walls that completely block a player
         if not self.bfs.has_path(0) or not self.bfs.has_path(1):
             self.remove_wall(x, y, direction)
             print("Illegal move")
